@@ -136,7 +136,8 @@ def main(argv=None):
         print >>sys.stderr, "	 for help use --help"
         return 2
 
-    print Locale().trans["English"]
+    #print Locale().trans["English"]
+    
 
 if __name__ == "__main__":
     sys.exit(main())
