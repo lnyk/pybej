@@ -12,6 +12,7 @@ USE IT UNDER YOUR OWN RISK!
 """
 
 import sys
+import os
 import getopt
 import wave
 import numpy as np
@@ -19,33 +20,15 @@ import scipy.signal as signal
 import pyaudio
 from datetime import datetime, timedelta
 from time import sleep
+from translation import Locale
 
-class Locale():
-    def __init__(self, lang='cn'):
-        self.trans = None
-        cn = {'i.1': u'中文',
-              'i.2': u'英文',
-        }
-        en = {'i.1': 'Please choose your language',
-              'i.2': 'English',
-              'i.3': 'Chinese'
-        }
-        if lang == 'cn':
-            self.trans = cn
-        else:
-            self.trans = en
+global l
 
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
 
-
 def CreateSweep(framerate = 44100, duration = 3, freq_start = 20, freq_stop = 18000):
-    self.framerate = framerate
-    self.duration = duration
-    self.freq_start = freq_start
-    self.freq_stop = freq_stop
-
     # 打开WAV文档
     f = wave.open(r"sweep.wav", "wb")
 
@@ -89,22 +72,26 @@ def PlaySweep(
     dt_start = datetime.now()
     td_remain = None
     dt_next_rest = dt_start + td_rest_every
+    rest_count = 0
+    td_plan = td_length
 
     while True:
         data = wf.readframes(chunk)
         if data == "":
-            print 'Play until ' + str(dt_start) + str(td_length) + ', ' + str(td_remain) + ' left.'
+            print l.trans['i.11'] % (str(dt_start), str(td_length), str(td_remain))
+            #print 'Play until ' + str(dt_start) + str(td_length) + ', ' + str(td_remain) + ' left.'
             wf.rewind()
             td_remain = td_length - (datetime.now() - dt_start)
             # 如果当前时刻大于下次休息时刻则进行休息
             if datetime.now() > dt_next_rest:
-                print 'Resting for ' + str(td_rest_for)
                 td_length += td_rest_for
                 dt_next_rest += td_rest_every + td_rest_for
+                rest_count += 1
+                print l.trans['i.12'] % (str(td_rest_for), str(dt_next_rest))
                 sleep(td_rest_for.total_seconds())
             # 如果剩余时间小于0，则结束
             if td_remain < timedelta(0, 0, 0, 0, 0, 0):
-                print 'Done!'
+                print l.trans['i.13'] % (str(dt_start), str(datetime.now()), str(td_plan), str(td_length), str(td_rest_for * rest_count), str(rest_count))
                 break
             continue
         stream.write(data)
@@ -136,8 +123,64 @@ def main(argv=None):
         print >>sys.stderr, "	 for help use --help"
         return 2
 
-    #print Locale().trans["English"]
-    
+    freq_start = 0
+    freq_stop = 0
+    duration = 0.0
+    td_length = None
+    td_rest_every = None
+    td_rest_for = None
+
+    # 语言选择（暂时只有中文）
+    l = Locale('en')
+
+    lang = 2
+    print l.trans['i.a']
+    print '\t' + l.trans['i.l1']
+    print '\t' + l.trans['i.l2']
+    try:
+        lang = int(raw_input('Your Choise (1-2): '))
+    except:
+        print l.trans['e.1']
+        return 1
+    if lang == 1:
+        print 'We are not ready for English language yet! Please choose Chinese!'
+        return 1
+    elif lang == 2:
+        l = Locale('zh_CN')
+    else:
+        l = Locale('zh_CN')
+
+    # 欢迎信息
+    print l.trans['i.1']
+    try:
+        freq_start = int(raw_input(l.trans['i.2'].encode('utf-8')))
+        if freq_start < 10:
+            print l.trans['e.2']
+        freq_stop = int(raw_input(l.trans['i.3'].encode('utf-8')))
+        if freq_stop > 22000:
+            print l.trans['e.3']
+        duration = float(raw_input(l.trans['i.4'].encode('utf-8')))
+        (hours, minutes, seconds) = input(l.trans['i.5'].encode('utf-8'))
+        td_length = timedelta(hours = hours, minutes = minutes, seconds = seconds)
+        (hours, minutes, seconds) = input(l.trans['i.6'].encode('utf-8'))
+        td_rest_every = timedelta(hours = hours, minutes = minutes, seconds = seconds)
+        (hours, minutes, seconds) = input(l.trans['i.7'].encode('utf-8'))
+        td_rest_for = timedelta(hours = hours, minutes = minutes, seconds = seconds)
+    except:
+        print l.trans['e.1']
+        return 1
+    print '=' * 15 + '\n' + l.trans['i.8'] % (str(freq_start), str(freq_stop), str(duration), str(td_length), str(td_rest_every), str(td_rest_for))
+
+    print l.trans['i.9']
+    raw_input(u'按回车键继续...'.encode('utf-8'))
+    print l.trans['i.10']
+    raw_input(u'按回车键继续...'.encode('utf-8'))
+
+    CreateSweep(duration = duration, freq_start = freq_start, freq_stop = freq_stop)
+    PlaySweep(td_length = td_length, td_rest_every = td_rest_every, td_rest_for = td_rest_for)
+    if os.path.exists('sweep.wav'): os.remove('sweep.wav')
+    print l.trans['i.14']
+    print l.trans['i.15']
 
 if __name__ == "__main__":
     sys.exit(main())
