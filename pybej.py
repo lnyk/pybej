@@ -67,20 +67,16 @@ def CreateSweep(framerate = 44100, duration = 3, freq_start = 20, freq_stop = 18
     f.close()
 
 def PlaySweep(
-        # 开始时间
-        dt_start = datetime.now(),
-        # 计划用时
-        dt_length = timedelta(0, 0, 0, 72, 0, 0),
+        # 计划用时（默认24小时）
+        td_length = timedelta(hours = 24),
         # 每隔多久休息（默认2小时）
-        dt_rest_every = timedelta(0, 0, 0, 2, 0, 0),
+        td_rest_every = timedelta(hours = 2),
         # 每次休息多久（默认30分钟）
-        dt_rest_for = timedelta(0, 0, 0, 0, 30, 0)
+        td_rest_for = timedelta(minutes = 30)
 ):
     # 不必检查计划用时是否大于休息时间总和，过期自然退出
     chunk = 1024
-
     wf = wave.open(r"sweep.wav", 'rb')
-
     p = pyaudio.PyAudio()
 
     # 打开声音输出流
@@ -89,20 +85,33 @@ def PlaySweep(
                     rate = wf.getframerate(),
                     output = True)
 
-    # 写声音输出流进行播放
+    # 定义时间变量
+    dt_start = datetime.now()
+    td_remain = None
+    dt_next_rest = dt_start + td_rest_every
 
-    play_count = 1
     while True:
         data = wf.readframes(chunk)
         if data == "":
+            print 'Play until ' + str(dt_start) + str(td_length) + ', ' + str(td_remain) + ' left.'
             wf.rewind()
-            print str(play_count)
-            play_count += 1
+            td_remain = td_length - (datetime.now() - dt_start)
+            # 如果当前时刻大于下次休息时刻则进行休息
+            if datetime.now() > dt_next_rest:
+                print 'Resting for ' + str(td_rest_for)
+                td_length += td_rest_for
+                dt_next_rest += td_rest_every + td_rest_for
+                sleep(td_rest_for.total_seconds())
+            # 如果剩余时间小于0，则结束
+            if td_remain < timedelta(0, 0, 0, 0, 0, 0):
+                print 'Done!'
+                break
             continue
         stream.write(data)
 
     stream.close()
     p.terminate()
+    return 0
 
 def main(argv=None):
     if argv is None:

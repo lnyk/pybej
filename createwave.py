@@ -43,25 +43,25 @@ stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
                 output = True)
 
 # 写声音输出流进行播放
-
 dt_start = datetime.now()
-dt_length = timedelta(0, 0, 0, 0, 1, 0)
-dt_rest_every = timedelta(0, 0, 0, 0, 0, 10)
-dt_rest_for = timedelta(0, 0, 0, 0, 0, 5)
-
-dt_remain = timedelta(0, 0, 0, 0, 0, 0)
+td_length = timedelta(minutes = 1)
+td_rest_every = timedelta(seconds = 10)
+td_rest_for = timedelta(seconds = 5)
+td_remain = None
+dt_next_rest = dt_start + td_rest_every
 
 while True:
     data = wf.readframes(chunk)
     if data == "":
-        print 'Play until ' + str(dt_start) + str(dt_length) + ', ' + str(dt_remain) + ' left.'
+        print 'Play until ' + str(dt_start) + str(td_length) + ', ' + str(td_remain) + ' left.'
         wf.rewind()
-        dt_remain = dt_length - (datetime.now() - dt_start)
-        if datetime.now() > dt_start + dt_rest_every:
-            print 'Resting for ' + dt_rest_for
-            dt_length = dt_length + dt_rest_for
-            sleep(dt_rest_for)
-        if dt_length < timedelta(0, 0, 0, 0, 0, 0):
+        td_remain = td_length - (datetime.now() - dt_start)
+        if datetime.now() > dt_next_rest:
+            print 'Resting for ' + str(td_rest_for)
+            td_length += td_rest_for
+            dt_next_rest += td_rest_every + td_rest_for
+            sleep(td_rest_for.total_seconds())
+        if td_remain < timedelta(0, 0, 0, 0, 0, 0):
             print 'Done!'
             break
         continue
