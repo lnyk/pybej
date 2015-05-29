@@ -22,8 +22,6 @@ from datetime import datetime, timedelta
 from time import sleep
 from translation import Locale
 
-global l
-
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -50,6 +48,8 @@ def CreateSweep(framerate = 44100, duration = 3, freq_start = 20, freq_stop = 18
     f.close()
 
 def PlaySweep(
+        # 语言类
+        l,
         # 计划用时（默认24小时）
         td_length = timedelta(hours = 24),
         # 每隔多久休息（默认2小时）
@@ -177,7 +177,7 @@ def main(argv=None):
     raw_input(u'按回车键继续...'.encode('utf-8'))
 
     CreateSweep(duration = duration, freq_start = freq_start, freq_stop = freq_stop)
-    PlaySweep(td_length = td_length, td_rest_every = td_rest_every, td_rest_for = td_rest_for)
+    PlaySweep(l, td_length = td_length, td_rest_every = td_rest_every, td_rest_for = td_rest_for)
     if os.path.exists('sweep.wav'): os.remove('sweep.wav')
     print l.trans['i.14']
     print l.trans['i.15']
